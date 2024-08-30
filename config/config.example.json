@@ -1,0 +1,59 @@
+{
+  "env": "prod",
+  "storePath": "./data",
+  "logPath": "./log",
+  "legoPath": "lego",
+  "daemonCron": "* * * * *",
+  "email": "cert@example.com",
+  "configMap": {
+    "dnspod": {
+      "LEGO_DISABLE_CNAME_SUPPORT": "true",
+      "TENCENTCLOUD_SECRET_ID": "secret_id",
+      "TENCENTCLOUD_SECRET_KEY": "secret_key"
+    },
+    "ali": {
+      "accessKeyId": "accesskey",
+      "accessKeySecret": "accesssecret"
+    }
+  },
+  "certs": [
+    {
+      "name": "testcert1",
+      "domains": [
+        "example.com"
+      ],
+      "dnsProvider": "tencentcloud",
+      "envs": {
+        "_": "dnspod"
+      }
+    },
+    {
+      "name": "testcert2",
+      "domains": [
+        "*.example.com"
+      ],
+      "dnsProvider": "tencentcloud",
+      "envs": {
+        "_": "dnspod"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "cert": "testcert1",
+      "domain": "example.com",
+      "destination": "alicdn",
+      "config": {
+        "_": "ali"
+      }
+    },
+    {
+      "cert": "testcert2",
+      "domain": "anydomain.example.com",
+      "destination": "alidcdn",
+      "config": {
+        "_": "ali"
+      }
+    }
+  ]
+}

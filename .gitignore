@@ -1,0 +1,7 @@
+data/*
+!data/.gitkeep
+log/*
+!log/.gitkeep
+node_modules/
+config/*
+!config/config.example.json

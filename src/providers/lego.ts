@@ -1,0 +1,140 @@
+import { spawn } from "child_process";
+import { resolve } from "path";
+import { sha1 } from "js-sha1";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+
+import { CertConfig, CertItem } from "~/types/cert";
+import { config } from "~/utils/config";
+import { Provider } from "~/types/provider";
+import { getCertExpires } from "~/utils/ssl";
+import { escapeString } from "~/utils/common";
+import { createLogger } from "~/utils/logger";
+
+const logger = createLogger("provider:lego");
+
+class LegoProvider implements Provider {
+  runOrRenew(cert: CertConfig): Promise<CertItem> {
+    let firstRun = true;
+    const certPath = resolve(
+      config.storePath,
+      "certs/",
+      "lego/",
+      escapeString(cert.name, /[a-z0-9\-]/i)
+    );
+    if (!existsSync(certPath)) {
+      mkdirSync(certPath, { recursive: true });
+    } else if (
+      existsSync(
+        resolve(
+          certPath,
+          "certificates/",
+          cert.domains[0]?.replace("*", "_") + ".json"
+        )
+      )
+    ) {
+      firstRun = false;
+    }
+
+    logger.info("LegoProvider.runOrRenew", { cert, certPath, firstRun });
+
+    const lego = spawn(
+      config.legoPath,
+      [
+        "--email",
+        config.email,
+        ...cert.domains.map((domain) => ["--domains", domain]).flat(),
+        "--path",
+        certPath,
+        "--dns",
+        cert.dnsProvider,
+        "--server",
+        config.env === "dev"
+          ? "https://acme-staging-v02.api.letsencrypt.org/directory"
+          : "https://acme-v02.api.letsencrypt.org/directory",
+        "--accept-tos",
+        firstRun ? "run" : "renew",
+      ],
+      {
+        env: cert.envs,
+      }
+    );
+
+    return new Promise((reso, reject) => {
+      lego.stdout.on("data", (data) => {
+        logger.info("lego cli stdout", { data: data.toString() });
+      });
+
+      lego.stderr.on("data", (data) => {
+        logger.error("lego cli stderr", { data: data.toString() });
+      });
+
+      lego.on("close", (code) => {
+        if (code === 0) {
+          const certPathCrt = resolve(
+            certPath,
+            "certificates/",
+            cert.domains[0]?.replace("*", "_") + ".crt"
+          );
+          const crt = readFileSync(certPathCrt, "utf-8");
+          const key = readFileSync(
+            certPathCrt.replace(".crt", ".key"),
+            "utf-8"
+          );
+
+          reso({
+            name: cert.name,
+            cert: crt,
+            key: key,
+            expires: getCertExpires(crt),
+            domains: cert.domains,
+          } as CertItem);
+        } else {
+          reject(false);
+        }
+      });
+    });
+  }
+
+  listCerts(): Promise<CertItem[]> {
+    const certBasePath = resolve(config.storePath, "certs", "lego");
+    if (!existsSync(certBasePath)) {
+      return Promise.resolve([]);
+    }
+
+    return Promise.resolve(
+      readdirSync(certBasePath)
+        .filter((v) => !v.startsWith("."))
+        .filter((folder) => {
+          return config.certs.findIndex((v) => v.name === folder) !== -1;
+        })
+        .map((certName) => {
+          const cert =
+            config.certs[config.certs.findIndex((v) => v.name === certName)];
+          const certPath = resolve(certBasePath, certName, "certificates/");
+          const fileBasePath = cert?.domains[0]?.replace("*", "_");
+
+          const crt = readFileSync(
+            resolve(certPath, fileBasePath + ".crt"),
+            "utf-8"
+          );
+          const key = readFileSync(
+            resolve(certPath, fileBasePath + ".key"),
+            "utf-8"
+          );
+
+          return {
+            name: certName,
+            cert: crt,
+            key: key,
+            expires: getCertExpires(crt),
+            identifier: sha1(
+              JSON.stringify(cert?.domains || []) + getCertExpires(crt)
+            ).substring(0, 16),
+          } as CertItem;
+        })
+        .filter((v) => v)
+    );
+  }
+}
+
+export const legoProvider = new LegoProvider();
