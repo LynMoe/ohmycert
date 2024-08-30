@@ -1,0 +1,11 @@
+services:
+  ohmycert:
+    image: nyabase/ohmycert:latest
+    restart: always
+    command: daemon
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config.json:/app/config/config.json
+    environment:
+      - TZ=Asia/Shanghai
