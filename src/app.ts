@@ -187,4 +187,9 @@ if (process.argv.length < 3) {
       logger.error("Unknown command:", command);
       process.exit(1);
   }
+
+  process.on("SIGINT", () => {
+    logger.info("Received SIGINT, exiting");
+    process.exit(0);
+  });
 }
