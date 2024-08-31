@@ -8,7 +8,7 @@ ohmycert 是一个统一管理证书的工具，支持证书的签发和部署�
 
 ### 证书签发
 
-证书签发通过 [LEGO](https://go-acme.github.io/lego/) 实现，支持大部分常见 DNS 服务商。具体列表请参考 [LEGO DNS Providers](https://go-acme.github.io/lego/dns/index.html).
+证书签发通过 [LEGO](https://go-acme.github.io/lego/) 实现，支持大部分常见 DNS 服务商。具体列表请参考 [LEGO DNS Providers](https://go-acme.github.io/lego/dns/index.html)。
 
 ### 部署
 
@@ -41,57 +41,60 @@ bun src/app.ts daemon # 启动守护进程
 
 ## 配置
 
-```json
+```json5
 {
-  "env": "prod", // 可选值: dev, prod。dev 模式下会使用 LE 的 Staging 环境
-  "storePath": "./data", // 证书和数据库的存储路径，相对于工作目录
-  "logPath": "./log", // 日志存储路径，相对于工作目录
-  "legoPath": "/usr/local/bin/lego", // LEGO 可执行文件路径，Docker 中默认为 /usr/local/bin/lego
-  "daemonCron": "41 4 * * *", // 定时任务执行时间，默认每天 4:41 执行一次
-  "email": "cert@example.com", // 用于接收证书签发的通知
-  "configMap": {
+  env: "prod", // 可选值: dev, prod。dev 模式下会使用 LE 的 Staging 环境
+  storePath: "./data", // 证书和数据库的存储路径，相对于工作目录
+  logPath: "./log", // 日志存储路径，相对于工作目录
+  legoPath: "/usr/local/bin/lego", // LEGO 可执行文件路径，Docker 中默认为 /usr/local/bin/lego
+  daemonCron: "41 4 * * *", // 定时任务执行时间，默认每天 4:41 执行一次
+  email: "cert@example.com", // 用于接收证书签发的通知
+  configMap: {
     // 配置映射，用于简化重复配置
-    "legodnspod": {
-      "LEGO_DISABLE_CNAME_SUPPORT": "true",
-      "TENCENTCLOUD_SECRET_ID": "",
-      "TENCENTCLOUD_SECRET_KEY": ""
+    legodnspod: {
+      LEGO_DISABLE_CNAME_SUPPORT: "true",
+      TENCENTCLOUD_SECRET_ID: "",
+      TENCENTCLOUD_SECRET_KEY: "",
     },
-    "tencent": {
-      "secretId": "",
-      "secretKey": ""
-    }
+    tencent: {
+      secretId: "",
+      secretKey: "",
+    },
   },
-  "certs": [
+  certs: [
     // 证书列表，表明需要签发的证书
     {
-      "name": "allexamplecom", // 证书名称，供内部及部署使用，不可重复，建议使用小写字母和数字
-      "domains": [
+      name: "allexamplecom", // 证书名称，供内部及部署使用，不可重复，建议使用小写字母和数字
+      domains: [
         // 证书域名列表
         "example.com",
-        "*.example.com"
+        "*.example.com",
       ],
-      "dnsProvider": "tencentcloud", // 参照 LEGO DNS Providers 文档填写
-      "envs": {
+      dnsProvider: "tencentcloud", // 参照 LEGO DNS Providers 文档填写
+      envs: {
         // 环境变量，用于指定签发证书时运行 LEGO 的环境变量
-        "_": "legodnspod" // '_' 为特殊字段，用于指定配置映射，系统会将 configMap 中的相应配置合并到当前配置中
-      }
-    }
+        _: "legodnspod", // '_' 为特殊字段，用于指定配置映射，系统会将 configMap 中的相应配置合并到当前配置中
+      },
+    },
   ],
-  "destinations": [
+  destinations: [
     // 证书部署目的地列表，用于将定义的证书部署到指定的云服务商
     {
-      "cert": "allexamplecom", // 证书名称，对应 certs 中的 name
-      "domain": "test.example.com",
-      "destination": "tencenteo", // 证书部署目的地，参照下方服务商列表
-      "config": {
+      cert: "allexamplecom", // 证书名称，对应 certs 中的 name
+      domain: "test.example.com",
+      destination: "tencenteo", // 证书部署目的地，参照下方服务商列表
+      config: {
         // 服务商配置，具体配置内容参照下方服务商列表
-        "_": "tencent", // 配置映射
-        "zoneId": "zone-xxxxx" // 除了配置映射外，还可以自定义字段
-      }
-    }
-  ]
+        _: "tencent", // 配置映射
+        zoneId: "zone-xxxxx", // 除了配置映射外，还可以自定义字段
+      },
+    },
+  ],
 }
 ```
+
+> [!TIP]
+> 配置文件支持热更新，修改配置文件后会自动加载并运行。
 
 > [!TIP]
 > 可通过环境变量 `OHMYCERTCONFIG` 来指定配置文件后缀，如 `OHMYCERTCONFIG=dev` 会读取 `config/config.dev.json` 文件。
@@ -103,10 +106,10 @@ bun src/app.ts daemon # 启动守护进程
 
 阿里云产品对应的 `destinations[].config` 配置如下：
 
-```json
+```json5
 {
-  "accessKeyId": "",
-  "accessKeySecret": ""
+  accessKeyId: "",
+  accessKeySecret: "",
 }
 ```
 
@@ -118,11 +121,11 @@ bun src/app.ts daemon # 启动守护进程
 
 腾讯云产品对应的 `destinations[].config` 配置如下：
 
-```json
+```json5
 {
-  "secretId": "",
-  "secretKey": "",
-  "zoneId": "" // 可选，仅 EdgeOne 需要
+  secretId: "",
+  secretKey: "",
+  zoneId: "", // 可选，仅 EdgeOne 需要
 }
 ```
 
@@ -134,10 +137,10 @@ bun src/app.ts daemon # 启动守护进程
 
 多吉云产品对应的 `destinations[].config` 配置如下：
 
-```json
+```json5
 {
-  "accessKey": "",
-  "secretKey": ""
+  accessKey: "",
+  secretKey: "",
 }
 ```
 
