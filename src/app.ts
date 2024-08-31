@@ -149,6 +149,12 @@ if (process.argv.length < 3) {
 
     case "daemon": {
       logger.info("Running in daemon mode", config.daemonCron);
+      logger.info("The first run will be in 5 seconds");
+
+      setTimeout(() => {
+        runMain().catch(console.error);
+      }, 5000);
+
       cron.schedule(config.daemonCron || "41 4 * * *", () => {
         runMain().catch(console.error);
       });

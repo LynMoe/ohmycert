@@ -277,7 +277,7 @@ class TencentEo implements Destination {
       });
 
       await db.update((data) => {
-        data.destinationData.tencent.cdnCertName[domain] = sslCertName;
+        data.destinationData.tencent.eoCertName[domain] = sslCertName;
       });
 
       return true;

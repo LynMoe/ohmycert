@@ -2,8 +2,8 @@
   "env": "prod",
   "storePath": "./data",
   "logPath": "./log",
-  "legoPath": "lego",
-  "daemonCron": "* * * * *",
+  "legoPath": "/usr/local/bin/lego",
+  "daemonCron": "41 4 * * *",
   "email": "cert@example.com",
   "configMap": {
     "dnspod": {
