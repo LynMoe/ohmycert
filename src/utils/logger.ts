@@ -1,8 +1,11 @@
+import { mkdirSync } from "fs";
 import { resolve } from "path";
 import winston from "winston";
 import "winston-daily-rotate-file";
 
 import { config } from "~/utils/config";
+
+mkdirSync(resolve(config.logPath), { recursive: true });
 
 const transportAll = new winston.transports.DailyRotateFile({
   filename: resolve(config.logPath, "ohmycert-%DATE%.log"),
