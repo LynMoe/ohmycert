@@ -1,6 +1,5 @@
 import axios from "axios";
-import { createHmac } from "crypto";
-import { Message, sha1 } from "js-sha1";
+import { enc, HmacSHA1 } from "crypto-js";
 
 import { CertItem } from "~/types/cert";
 import { Destination, DestinationConfigDogecloud } from "~/types/destination";
@@ -29,11 +28,9 @@ async function dogecloudApi(
   const body = JSON.stringify(data);
 
   const message = apiPath + "\n" + body;
-  const hash = sha1.hmac.create(config.secretKey as Message);
-  // 更新消息
-  hash.update(message);
-  // 获取十六进制哈希值
-  const sign = hash.hex();
+  const key = enc.Utf8.parse(config.secretKey);
+  const hash = HmacSHA1(message, key);
+  const sign = enc.Hex.stringify(hash);
 
   const authorization = "TOKEN " + config.accessKey + ":" + sign;
 

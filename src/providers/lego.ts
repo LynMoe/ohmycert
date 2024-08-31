@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 import { resolve } from "path";
-import { sha1 } from "js-sha1";
+import { SHA3 } from "crypto-js";
 import {
   existsSync,
   mkdirSync,
@@ -152,9 +152,11 @@ class LegoProvider implements Provider {
             cert: crt,
             key: key,
             expires: getCertExpires(crt),
-            identifier: sha1(
+            identifier: SHA3(
               JSON.stringify(cert?.domains || []) + getCertExpires(crt)
-            ).substring(0, 16),
+            )
+              .toString()
+              .substring(0, 16),
           } as CertItem;
         })
         .filter((v) => v !== null)
