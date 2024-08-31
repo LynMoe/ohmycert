@@ -5,7 +5,7 @@ services:
     command: daemon
     volumes:
       - ./data:/app/data
-      - ./logs:/app/logs
+      - ./log:/app/log
       - ./config.json:/app/config/config.json
     environment:
       - TZ=Asia/Shanghai

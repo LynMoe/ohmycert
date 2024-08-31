@@ -80,7 +80,7 @@ class LegoProvider implements Provider {
         logger.info("lego cli stdout", { data: data.toString() });
       });
 
-      lego.stderr.on("data", (data) => {
+      lego.stdout.on("data", (data) => {
         logger.error("lego cli stderr", { data: data.toString() });
       });
 
@@ -134,6 +134,10 @@ class LegoProvider implements Provider {
           const certPath = resolve(certBasePath, certName, "certificates/");
           const fileBasePath = cert?.domains[0]?.replace("*", "_");
 
+          if (!existsSync(resolve(certPath, fileBasePath + ".crt"))) {
+            return null;
+          }
+
           const crt = readFileSync(
             resolve(certPath, fileBasePath + ".crt"),
             "utf-8"
@@ -153,7 +157,7 @@ class LegoProvider implements Provider {
             ).substring(0, 16),
           } as CertItem;
         })
-        .filter((v) => v)
+        .filter((v) => v !== null)
     );
   }
 }
