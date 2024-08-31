@@ -12,6 +12,8 @@ export interface Destination {
 export enum DestinationType {
   alicdn = "alicdn",
   alidcdn = "alidcdn",
+  tencentcdn = "tencentcdn",
+  tencenteo = "tencenteo",
   dogecloud = "dogecloud",
 }
 
@@ -22,6 +24,12 @@ export interface DestinationConfig {
 export interface DestinationConfigAli extends DestinationConfig {
   accessKeyId: string;
   accessKeySecret: string;
+}
+
+export interface DestinationConfigTencent extends DestinationConfig {
+  secretId: string;
+  secretKey: string;
+  zoneId?: string;
 }
 
 export interface DestinationConfigDogecloud extends DestinationConfig {

@@ -5,12 +5,14 @@ import { CertItem } from "~/types/cert";
 import {
   DestinationConfigAli,
   DestinationConfigDogecloud,
+  DestinationConfigTencent,
   DestinationType,
 } from "~/types/destination";
 import { config } from "~/utils/config";
 import { createLogger } from "~/utils/logger";
 import { aliCdn, aliDcdn } from "~/destinations/ali";
 import { dogecloudCdn } from "./destinations/dogecloud";
+import { tencentCdn, tencentEo } from "./destinations/tencent";
 
 const logger = createLogger("app");
 
@@ -82,6 +84,32 @@ async function runMain() {
           );
 
           await aliDcdn.cleanCert(destination.config as DestinationConfigAli);
+          break;
+        }
+
+        case DestinationType.tencentcdn: {
+          await tencentCdn.deployCert(
+            destination.domain,
+            certList[destination.cert] as CertItem,
+            destination.config as DestinationConfigTencent
+          );
+
+          await tencentCdn.cleanCert(
+            destination.config as DestinationConfigTencent
+          );
+          break;
+        }
+
+        case DestinationType.tencenteo: {
+          await tencentEo.deployCert(
+            destination.domain,
+            certList[destination.cert] as CertItem,
+            destination.config as DestinationConfigTencent
+          );
+
+          await tencentEo.cleanCert(
+            destination.config as DestinationConfigTencent
+          );
           break;
         }
 
