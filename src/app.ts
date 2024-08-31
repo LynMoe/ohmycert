@@ -33,7 +33,8 @@ async function runMain() {
       await legoProvider.runOrRenew(cert);
       logger.info("Cert processed " + cert.name, { cert });
     } catch (e: any) {
-      logger.error("Error while running or renewing cert" + cert.name, {
+      logger.error("Error while running or renewing cert " + cert.name, {
+        cert,
         e: e.stack,
       });
     }

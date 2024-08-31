@@ -64,9 +64,9 @@ class LegoProvider implements Provider {
         "--dns",
         cert.dnsProvider,
         "--server",
-        config.env === "dev"
-          ? "https://acme-staging-v02.api.letsencrypt.org/directory"
-          : "https://acme-v02.api.letsencrypt.org/directory",
+        config.env === "prod"
+          ? "https://acme-v02.api.letsencrypt.org/directory"
+          : "https://acme-staging-v02.api.letsencrypt.org/directory",
         "--accept-tos",
         firstRun ? "run" : "renew",
       ],
@@ -80,8 +80,8 @@ class LegoProvider implements Provider {
         logger.info("lego cli stdout", { data: data.toString() });
       });
 
-      lego.stdout.on("data", (data) => {
-        logger.error("lego cli stderr", { data: data.toString() });
+      lego.stderr.on("data", (data) => {
+        logger.info("lego cli stderr", { data: data.toString() });
       });
 
       lego.on("close", (code) => {
