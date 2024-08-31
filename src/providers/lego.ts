@@ -1,7 +1,13 @@
 import { spawn } from "child_process";
 import { resolve } from "path";
 import { sha1 } from "js-sha1";
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "fs";
 
 import { CertConfig, CertItem } from "~/types/cert";
 import { config } from "~/utils/config";
@@ -23,6 +29,10 @@ class LegoProvider implements Provider {
     );
     if (!existsSync(certPath)) {
       mkdirSync(certPath, { recursive: true });
+      writeFileSync(
+        resolve(certPath, "domains.json"),
+        JSON.stringify(cert.domains)
+      );
     } else if (
       existsSync(
         resolve(
@@ -30,7 +40,9 @@ class LegoProvider implements Provider {
           "certificates/",
           cert.domains[0]?.replace("*", "_") + ".json"
         )
-      )
+      ) &&
+      readFileSync(resolve(certPath, "domains.json"), "utf-8") ===
+        JSON.stringify(cert.domains)
     ) {
       firstRun = false;
     }
