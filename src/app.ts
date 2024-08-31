@@ -13,10 +13,14 @@ import { createLogger } from "~/utils/logger";
 import { aliCdn, aliDcdn } from "~/destinations/ali";
 import { dogecloudCdn } from "./destinations/dogecloud";
 import { tencentCdn, tencentEo } from "./destinations/tencent";
+import { eventBus } from "./utils/eventbus";
 
 const logger = createLogger("app");
 
+let isRunning = false;
+
 async function runMain() {
+  logger.info("Starting main loop");
   const configMap = config.configMap;
 
   for (const cert of config.certs) {
@@ -135,6 +139,18 @@ async function runMain() {
   }
 }
 
+function runWarp() {
+  if (isRunning) {
+    logger.warn("Main loop is already running, skipping");
+    return;
+  }
+  return runMain()
+    .catch(console.error)
+    .finally(() => {
+      isRunning = false;
+    });
+}
+
 if (process.argv.length < 3) {
   logger.error("No command specified");
   process.exit(1);
@@ -143,7 +159,7 @@ if (process.argv.length < 3) {
   switch (command) {
     case "run": {
       logger.info("Running once");
-      runMain().catch(console.error);
+      runWarp();
       break;
     }
 
@@ -152,11 +168,16 @@ if (process.argv.length < 3) {
       logger.info("The first run will be in 5 seconds");
 
       setTimeout(() => {
-        runMain().catch(console.error);
+        runWarp();
       }, 5000);
 
       cron.schedule(config.daemonCron || "41 4 * * *", () => {
-        runMain().catch(console.error);
+        runWarp();
+      });
+
+      eventBus.on("config:reload", () => {
+        logger.info("Config reloaded, running main loop");
+        runWarp();
       });
       break;
     }

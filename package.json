@@ -15,6 +15,7 @@
     "@alicloud/dcdn20180115": "^2.4.2",
     "@alicloud/openapi-client": "^0.4.11",
     "axios": "^1.7.5",
+    "chokidar": "3.6.0",
     "eslint": "^9.9.1",
     "js-sha1": "^0.7.0",
     "jsrsasign": "^11.1.0",

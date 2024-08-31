@@ -28,6 +28,10 @@ class LegoProvider implements Provider {
       escapeString(cert.name, /[a-z0-9\-]/i)
     );
     if (!existsSync(certPath)) {
+      logger.info("LegoProvider.runOrRenew: cert path not exists", {
+        cert,
+        certPath,
+      });
       mkdirSync(certPath, { recursive: true });
       writeFileSync(
         resolve(certPath, "domains.json"),
@@ -91,6 +95,11 @@ class LegoProvider implements Provider {
           const key = readFileSync(
             certPathCrt.replace(".crt", ".key"),
             "utf-8"
+          );
+
+          writeFileSync(
+            resolve(certPath, "domains.json"),
+            JSON.stringify(cert.domains)
           );
 
           reso({
