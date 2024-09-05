@@ -1,15 +1,50 @@
-import { AES, enc } from "crypto-js";
+import { readdir } from "fs/promises";
 
-const message = "Hello, world!";
+import { downloadConfigFromS3 } from "./utils/s3";
+import { exec } from "./utils/cmd";
+import { createLogger, flushLog } from "./utils/logger";
+import config from "./utils/config";
+const logger = createLogger("main");
 
-const passphrase = "123456";
+// check uid
+if ((await exec("id", ["-u"])) !== "0") {
+  logger.info(await exec("id", ["-u"]), (await exec("id", ["-u"])) === "0");
+  console.error("Please run as root");
+  process.exit(1);
+}
+await config.init();
 
-const encrypted = AES.encrypt(message, passphrase).toString();
-console.log("enc", encrypted);
+let result;
+try {
+  result = await downloadConfigFromS3(config.config);
+  logger.info(
+    "Downloaded config, cert names",
+    result.map((r) => r.name)
+  );
+} catch (e: any) {
+  logger.error("Failed to download config", { e: e.stack });
+  process.exit(1);
+}
 
-const decrypted = AES.decrypt(encrypted, passphrase).toString(enc.Utf8);
-console.log("dec", decrypted);
+const scripts = (await readdir("/etc/ohmycert/scripts")).filter(
+  (f) => !f.startsWith(".") && f.endsWith(".js")
+);
 
-console.log("Hello, world!");
+for (const script of scripts) {
+  logger.info(`Running script ${script}`);
+  try {
+    const { default: userFunc } = await import(
+      `/etc/ohmycert/scripts/${script}`
+    );
 
-console.log(await fetch("https://myip.ipip.net").then((res) => res.text()));
+    await userFunc(result, { exec, logger: createLogger(script) });
+  } catch (e: any) {
+    logger.error(`Failed to run script ${script}`, { e: e.stack });
+  }
+}
+
+logger.info("All scripts finished");
+
+await flushLog();
+
+process.exit(0);

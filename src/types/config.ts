@@ -1,5 +1,6 @@
 import { CertConfig } from "~/types/cert";
 import { DestinationConfig, DestinationType } from "~/types/destination";
+import { DistributionConfig } from "./distribution";
 
 export type Config = {
   env: "dev" | "prod";
@@ -11,6 +12,7 @@ export type Config = {
   configMap: Record<string, ConfigMap>;
   certs: CertConfig[];
   destinations: ConfigDestination[];
+  distribution: DistributionConfig;
 };
 
 type ConfigDestination = {
@@ -21,4 +23,6 @@ type ConfigDestination = {
   config: DestinationConfig;
 };
 
-type ConfigMap = {};
+type ConfigMap = {
+  [key: string]: string;
+};

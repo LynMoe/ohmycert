@@ -2,7 +2,14 @@
 
 ## 介绍
 
-ohmycert 是一个统一管理证书的工具，支持证书的签发和部署，用于将通过 ACME 签发的通配符证书部署至公有云服务。
+ohmycert 是一个统一管理证书的工具，支持证书的签发和部署，用于将通过 ACME 签发的通配符证书部署至公有云服务。通过 ohmycert-agent，你可以通过 S3 将统一签发的证书部署至任意机器上。
+
+ohmycert 适合你如果:
+
+- 你想在公有云平台上部署 Let's Encrypt 通配符证书
+- or 你不想被爬证书透明度的 Bot/好奇宝宝打扰
+- or 你有强迫症想要统一管理所有证书
+- or 你有多点部署需求
 
 ## Support Matrix
 
@@ -37,6 +44,33 @@ docker-compose up -d
 ```bash
 bun src/app.ts run # 执行一次
 bun src/app.ts daemon # 启动守护进程
+```
+
+### Agent
+
+ohmycert-agent 用于将证书部署至指定机器上，通过 S3 存储证书，ohmycert-agent 会定时拉取证书并通过用户自定义的脚本进行部署。
+
+```bash
+# 下载 LLRT JS 运行时，如有 Node 环境可用 Node 替代
+wget https://github.com/awslabs/llrt/releases/download/v0.2.1-beta/llrt-linux-x64.zip
+unzip llrt-linux-x64.zip
+chmod +x llrt
+sudo mv llrt /usr/local/bin/llrt
+
+# 下载 ohmycert-agent
+sudo wget https://raw.githubusercontent.com/LynMoe/ohmycert/main/agent/dist/ohmycert-agent.js -O /usr/local/share/ohmycert-agent.js
+sudo llrt /usr/local/share/ohmycert-agent.js
+
+# 配置 S3
+sudo vi /etc/ohmycert/config.json
+
+# 配置脚本
+sudo vi /etc/ohmycert/scripts/example.js
+
+# 配置定时任务
+sudo crontab -e
+# 每小时执行一次
+0 * * * * llrt /usr/local/share/ohmycert-agent.js
 ```
 
 ## 配置
@@ -90,6 +124,25 @@ bun src/app.ts daemon # 启动守护进程
       },
     },
   ],
+  distribution: {
+    s3: {
+      endpoint: "https://oss-cn-shenzhen.aliyuncs.com",
+      region: "cn-shenzhen",
+      bucket: "example-bucket",
+      path: "a-complex-path",
+      accessKey: "",
+      secretKey: "",
+    },
+    agents: [
+      // 此处配置需要与 ohmycert-agent 保持一致，有两个预共享密钥，pathKey 用于保护负荷路径，key 用于保护符合内容
+      {
+        name: "my-edge-node",
+        pathKey: "a-complex-path",
+        key: "a-complex-key",
+        certs: ["allexamplecom"],
+      },
+    ],
+  },
 }
 ```
 

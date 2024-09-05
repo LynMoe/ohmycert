@@ -152,6 +152,7 @@ class LegoProvider implements Provider {
             cert: crt,
             key: key,
             expires: getCertExpires(crt),
+            domains: cert?.domains,
             identifier: SHA3(
               JSON.stringify(cert?.domains || []) + getCertExpires(crt)
             )

@@ -11,9 +11,10 @@ import {
 import { config } from "~/utils/config";
 import { createLogger } from "~/utils/logger";
 import { aliCdn, aliDcdn } from "~/destinations/ali";
-import { dogecloudCdn } from "./destinations/dogecloud";
-import { tencentCdn, tencentEo } from "./destinations/tencent";
-import { eventBus } from "./utils/eventbus";
+import { tencentCdn, tencentEo } from "~/destinations/tencent";
+import { dogecloudCdn } from "~/destinations/dogecloud";
+import { eventBus } from "~/utils/eventbus";
+import { uploadConfigToS3 } from "~/utils/s3";
 
 const logger = createLogger("app");
 
@@ -52,6 +53,33 @@ async function runMain() {
   } catch (e: any) {
     logger.error("Error while getting cert list", { e: e.stack });
     return;
+  }
+
+  if (config.distribution && config.distribution.agents) {
+    for (const dist of config.distribution.agents) {
+      logger.info("Processing distribution agent", { dist });
+      if (dist.certs.length === 0) {
+        logger.warn("No certs found for distribution agent", { dist });
+        continue;
+      }
+      if (dist.certs.some((i) => !certList[i])) {
+        logger.warn("Cert not found for distribution agent", { dist });
+        continue;
+      }
+
+      try {
+        await uploadConfigToS3(
+          config.distribution.s3,
+          dist,
+          Object.values(certList)
+        );
+      } catch (e: any) {
+        logger.error("Error while processing distribution agent", {
+          dist,
+          e: e.stack,
+        });
+      }
+    }
   }
 
   for (const destination of config.destinations) {
@@ -160,7 +188,9 @@ if (process.argv.length < 3) {
   switch (command) {
     case "run": {
       logger.info("Running once");
-      runWarp();
+      runWarp()?.then(() => {
+        process.exit(0);
+      });
       break;
     }
 
