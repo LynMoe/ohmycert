@@ -63,7 +63,7 @@ export async function uploadConfigToS3(
   });
 
   const url = await getSignedUrl(client, command, {
-    expiresIn: 60,
+    expiresIn: 600,
   });
   const response = await fetch(url, {
     method: "PUT",
