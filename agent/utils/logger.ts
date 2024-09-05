@@ -14,7 +14,6 @@ const formatLog = (level: string, module: string, message: string): string => {
 };
 
 const writeLog = async (log: string) => {
-  console.log("write", log);
   try {
     let existingLogs = "";
     try {
@@ -32,7 +31,6 @@ const ensureLogFileSize = async () => {
   try {
     const data = await readFile(logFilePath, "utf8");
     const lines = data.split("\n");
-    console.log("Ensuring log file size", lines);
     if (lines.length > MAX_LOG_LINES) {
       console.log("Trimming log file");
       const trimmedData = lines.slice(-MAX_LOG_LINES).join("\n");
@@ -54,8 +52,6 @@ export const createLogger = (module: string) => {
     // await maybeEnsureLogFileSize();
 
     logBuffer += formattedLog;
-
-    console.log("Logged", level, message);
   };
 
   return {
