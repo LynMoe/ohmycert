@@ -44,6 +44,8 @@ docker-compose up -d
 ```bash
 bun src/app.ts run # 执行一次
 bun src/app.ts daemon # 启动守护进程
+
+bun src/prepareS3Env.ts run # 在无状态环境中运行 (参见 ### Serverless)
 ```
 
 ### Agent
@@ -54,6 +56,7 @@ ohmycert-agent 用于将证书部署至指定机器上，通过 S3 存储证书�
 # 下载 LLRT JS 运行时，如有 Node 环境可用 Node 替代
 wget https://github.com/awslabs/llrt/releases/download/v0.2.1-beta/llrt-linux-x64.zip
 unzip llrt-linux-x64.zip
+rm -f llrt-linux-x64.zip
 chmod +x llrt
 sudo mv llrt /usr/local/bin/llrt
 
@@ -71,6 +74,28 @@ sudo vi /etc/ohmycert/scripts/example.js
 sudo crontab -e
 # 每小时执行一次
 0 * * * * llrt /usr/local/share/ohmycert-agent.js
+```
+
+### Serverless
+
+目前 ohmycert 支持了通过容器的 Serverless 部署，国内云已知腾讯云支持。
+
+通过配置下列环境变量，并通过 `bun src/prepareS3Env.ts run` 命令启动 ohmycert，服务端会以拉取 S3 中的配置文件，并在结束后将保存的证书信息压缩上传至 S3，若远端存在压缩的证书信息，在启动时会自动拉去并解压，从而实现在 Serverless 容器中保存状态。
+
+腾讯云需要将镜像推送至腾讯云镜像仓库，需要在本地拉取并重新打 Tag 后再上传，详见腾讯云文档。
+
+```bash
+OMS_S3_ENV="prod"
+OMS_S3_ENDPOINT="https://cos.ap-guangzhou.myqcloud.com"
+OMS_S3_REGION="ap-guangzhou"
+OMS_S3_BUCKET="cert-123123123123"
+OMS_S3_ACCESS_KEY="A1231231231231231231323Rt"
+OMS_S3_SECRET_KEY="M123123123123123123123123123"
+OMS_S3_DATA_PATH="secret/data.prod.zip" # 在第一次运行结束后，会自动上传至 S3，后续启动时会自动拉取
+OMS_S3_CONFIG_PATH="secret/config.prod.json" # 需要提前将配置文件上传至 S3
+OMS_STORE_PATH="./data"
+OMS_LOG_PATH="./log"
+OMS_LEGO_PATH="/usr/local/bin/lego" # 容器内的 lego 二进制地址
 ```
 
 ## 配置
