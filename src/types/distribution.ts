@@ -1,16 +1,13 @@
+import { S3Config } from "./util";
+
 export type DistributionConfig = {
   s3: DistributionS3Config;
   agents: DistributionAgentConfig[];
 };
 
 export type DistributionS3Config = {
-  endpoint: string;
-  region: string;
-  bucket: string;
   path: string;
-  accessKey: string;
-  secretKey: string;
-};
+} & S3Config;
 
 export type DistributionAgentConfig = {
   name: string;

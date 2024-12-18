@@ -1,7 +1,11 @@
 import { join } from "path";
-import { cipher, md, random, util } from "node-forge";
+import { cipher, random, util } from "node-forge";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 import {
   DistributionAgentConfig,
@@ -9,6 +13,8 @@ import {
 } from "~/types/distribution";
 import { createLogger } from "~/utils/logger";
 import { CertItem } from "~/types/cert";
+import { S3Config } from "~/types/util";
+import { createHash } from "crypto";
 const logger = createLogger("s3");
 
 function encryptText(text: string, key: string): string {
@@ -25,18 +31,17 @@ function encryptText(text: string, key: string): string {
   return result;
 }
 
-export async function uploadConfigToS3(
-  config: DistributionS3Config,
-  agent: DistributionAgentConfig,
-  payload: CertItem[]
-): Promise<boolean> {
-  const s3Path = join(config.path, agent.pathKey + ".json.bin");
-
+export async function uploadFileToS3(
+  config: S3Config,
+  key: string,
+  file: Buffer
+) {
   logger.info(`Uploading file to S3`, {
     endpoint: config.endpoint,
     region: config.region,
     bucket: config.bucket,
-    path: s3Path,
+    key,
+    size: file.length,
   });
 
   const client = new S3Client({
@@ -48,16 +53,12 @@ export async function uploadConfigToS3(
     },
   });
 
-  const body = encryptText(
-    JSON.stringify(payload.filter((i) => agent.certs.includes(i.name))),
-    agent.key
-  );
-  const bodyHash = md.sha256.create().update(body).digest().toHex();
+  const bodyHash = createHash("sha256").update(file).digest("hex");
 
   const command = new PutObjectCommand({
     Bucket: config.bucket,
-    Key: s3Path,
-    Body: body,
+    Key: key,
+    Body: file,
     ContentType: "application/octet-stream",
     ChecksumSHA256: bodyHash,
   });
@@ -67,7 +68,7 @@ export async function uploadConfigToS3(
   });
   const response = await fetch(url, {
     method: "PUT",
-    body,
+    body: file,
     headers: {
       "Content-Type": "application/octet-stream",
     },
@@ -80,5 +81,36 @@ export async function uploadConfigToS3(
     });
     throw new Error(`Failed to upload file: ${response.statusText}`);
   }
+}
+
+export async function uploadConfigToS3(
+  config: DistributionS3Config,
+  agent: DistributionAgentConfig,
+  payload: CertItem[]
+): Promise<boolean> {
+  const s3Path = join(config.path, agent.pathKey + ".json.bin");
+
+  logger.info(`Uploading cert to S3`, {
+    endpoint: config.endpoint,
+    region: config.region,
+    bucket: config.bucket,
+    path: s3Path,
+    name: agent.name,
+  });
+
+  const body = encryptText(
+    JSON.stringify(payload.filter((i) => agent.certs.includes(i.name))),
+    agent.key
+  );
+
+  try {
+    await uploadFileToS3(config, s3Path, Buffer.from(body));
+  } catch (e: any) {
+    logger.error(`Failed to upload config to S3`, {
+      error: e.stack,
+    });
+    return false;
+  }
+
   return true;
 }

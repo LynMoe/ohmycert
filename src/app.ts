@@ -20,6 +20,17 @@ const logger = createLogger("app");
 
 let isRunning = false;
 
+function exit(code: number) {
+  logger.info("Exiting with code", { code });
+  if (process.env["OMS_HOSTED"] === "true") {
+    eventBus.emit("oms:finish", {
+      code,
+    });
+  } else {
+    process.exit(code);
+  }
+}
+
 async function runMain() {
   logger.info("Starting main loop");
   const configMap = config.configMap;
@@ -182,14 +193,14 @@ function runWarp() {
 
 if (process.argv.length < 3) {
   logger.error("No command specified");
-  process.exit(1);
+  exit(1);
 } else {
   const command = process.argv[2];
   switch (command) {
     case "run": {
       logger.info("Running once");
       runWarp()?.then(() => {
-        process.exit(0);
+        exit(0);
       });
       break;
     }
@@ -215,11 +226,11 @@ if (process.argv.length < 3) {
 
     default:
       logger.error("Unknown command:", command);
-      process.exit(1);
+      exit(1);
   }
 
   process.on("SIGINT", () => {
     logger.info("Received SIGINT, exiting");
-    process.exit(0);
+    exit(0);
   });
 }
